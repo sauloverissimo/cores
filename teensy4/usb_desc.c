@@ -1156,6 +1156,8 @@ PROGMEM const uint8_t usb_config_descriptor_480[CONFIG_DESC_SIZE] = {
   #endif
 #ifdef MIDI2_HAS_DESCRIPTORS
 	// MIDI 2.0 Alternate Setting 1: UMP native
+	// (USB MIDI 2.0 spec, section 3.1.1: alt 0 = MIDI 1.0 for legacy
+	// hosts, alt 1 = UMP, host picks via SET_INTERFACE)
 	// Interface descriptor (same interface number, alt=1)
 	9,					// bLength
 	4,					// bDescriptorType
@@ -1166,21 +1168,22 @@ PROGMEM const uint8_t usb_config_descriptor_480[CONFIG_DESC_SIZE] = {
 	0x03,					// bInterfaceSubClass (MIDI Streaming)
 	0x00,					// bInterfaceProtocol
 	0,					// iInterface
-	// MS Header CS Interface (bcdMSC = 0x0200)
+	// MS Header CS Interface, bcdMSC = 0x0200 (section 5.2.2.1)
 	7,					// bLength
 	0x24,					// bDescriptorType = CS_INTERFACE
 	0x01,					// bDescriptorSubtype = MS_HEADER
 	0x00, 0x02,				// bcdMSC = revision 02.00
 	LSB(7+(7+4+MIDI2_NUM_GROUPS)*2),	// wTotalLength
 	MSB(7+(7+4+MIDI2_NUM_GROUPS)*2),
-	// Bulk OUT Endpoint (7 bytes, standard USB -- not Audio 9-byte)
+	// Bulk OUT Endpoint, standard 7-byte form, not Audio 9-byte
+	// (section 5.3.1)
 	7,					// bLength
 	5,					// bDescriptorType = ENDPOINT
 	MIDI2_RX_ENDPOINT,			// bEndpointAddress
 	0x02,					// bmAttributes (bulk)
 	LSB(MIDI2_RX_SIZE_480), MSB(MIDI2_RX_SIZE_480), // wMaxPacketSize
 	0,					// bInterval
-	// CS Endpoint General 2.0
+	// CS Endpoint General 2.0 (section 5.3.2)
 	4+MIDI2_NUM_GROUPS,			// bLength
 	0x25,					// bDescriptorType = CS_ENDPOINT
 	0x02,					// bDescriptorSubtype = General 2.0
@@ -1231,14 +1234,14 @@ PROGMEM const uint8_t usb_config_descriptor_480[CONFIG_DESC_SIZE] = {
   #if MIDI2_NUM_GROUPS >= 16
 	16,
   #endif
-	// Bulk IN Endpoint (7 bytes)
+	// Bulk IN Endpoint, standard 7-byte form (section 5.3.1)
 	7,					// bLength
 	5,					// bDescriptorType = ENDPOINT
 	MIDI2_TX_ENDPOINT | 0x80,		// bEndpointAddress
 	0x02,					// bmAttributes (bulk)
 	LSB(MIDI2_TX_SIZE_480), MSB(MIDI2_TX_SIZE_480), // wMaxPacketSize
 	0,					// bInterval
-	// CS Endpoint General 2.0
+	// CS Endpoint General 2.0 (section 5.3.2)
 	4+MIDI2_NUM_GROUPS,			// bLength
 	0x25,					// bDescriptorType = CS_ENDPOINT
 	0x02,					// bDescriptorSubtype = General 2.0
@@ -2305,7 +2308,8 @@ PROGMEM const uint8_t usb_config_descriptor_12[CONFIG_DESC_SIZE] = {
         63,
   #endif
 #ifdef MIDI2_HAS_DESCRIPTORS
-	// MIDI 2.0 Alternate Setting 1 (12 Mbit/sec)
+	// MIDI 2.0 Alternate Setting 1 (12 Mbit/sec), same layout as the
+	// 480 Mbit/sec block above, full-speed packet sizes
 	9, 4, MIDI_INTERFACE, 1, 2, 0x01, 0x03, 0x00, 0,
 	7, 0x24, 0x01, 0x00, 0x02,
 	LSB(7+(7+4+MIDI2_NUM_GROUPS)*2),
@@ -2985,16 +2989,20 @@ void usb_init_serialnumber(void)
 // **************************************************************
 
 // MIDI 2.0 Group Terminal Block descriptor (served via GET_DESCRIPTOR)
+// USB MIDI 2.0 spec, section 5.4.  One 13-byte block per group:
+// bLength, CS_GR_TRM_BLOCK, GR_TRM_BLOCK, bGrpTrmBlkID, bidirectional,
+// first group, 1 group, no string, bMIDIProtocol 0x00 = unknown
+// (negotiated at runtime via MIDI-CI / UMP Stream), bandwidth unknown.
 #ifdef MIDI2_HAS_DESCRIPTORS
 #define MIDI2_GTB_ENTRY(id, grp) \
-	13, 0x26, 0x02, (id), 0x00, (grp), 1, 0, 0x02, 0, 0, 0, 0,
+	13, 0x26, 0x02, (id), 0x00, (grp), 1, 0, 0x00, 0, 0, 0, 0,
 
 PROGMEM const uint8_t midi2_gtb_descriptor[] = {
-	// GTB Header
+	// GTB Header (section 5.4.1)
 	5, 0x26, 0x01,
 	LSB(5 + 13 * MIDI2_NUM_GROUPS),
 	MSB(5 + 13 * MIDI2_NUM_GROUPS),
-	// GTB Entry 1 (group 0)
+	// GTB Entries (section 5.4.2), one per group
 	MIDI2_GTB_ENTRY(1, 0)
   #if MIDI2_NUM_GROUPS >= 2
 	MIDI2_GTB_ENTRY(2, 1)

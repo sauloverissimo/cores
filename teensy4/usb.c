@@ -656,9 +656,13 @@ static void endpoint0_setup(uint64_t setupdata)
 		}
 		break;
 #endif
-#ifdef MIDI2_HAS_DESCRIPTORS
+#if defined(MIDI2_HAS_DESCRIPTORS)
 	  case 0x0B01: // SET_INTERFACE (alternate setting)
 		if (setup.wIndex == MIDI_INTERFACE) {
+			// Only alt 0 (MIDI 1.0 byte stream) and alt 1 (MIDI 2.0
+			// UMP) are defined; any other value stalls (USB 2.0
+			// spec, section 9.4.10).
+			if (setup.wValue > 1) break;
 			extern uint8_t usb_midi2_alt_setting;
 			extern void usb_midi_flush_output(void);
 			usb_midi2_alt_setting = setup.wValue;
