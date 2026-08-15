@@ -62,7 +62,7 @@ int usb_midi2_read_message(uint32_t *words, uint8_t *count);
 
 // Write count UMP words to the endpoint without protocol translation.
 // count must match the size declared by the message type.
-void usb_midi2_write_message(const uint32_t *words, uint8_t count);
+int usb_midi2_write_message(const uint32_t *words, uint8_t count);
 #ifdef __cplusplus
 }
 #endif
@@ -80,8 +80,8 @@ public:
 	int read(uint32_t *words, uint8_t *count) __attribute__((always_inline)) {
 		return usb_midi2_read_message(words, count);
 	}
-	void write(const uint32_t *words, uint8_t count) __attribute__((always_inline)) {
-		usb_midi2_write_message(words, count);
+	int write(const uint32_t *words, uint8_t count) __attribute__((always_inline)) {
+		return usb_midi2_write_message(words, count);
 	}
 };
 extern usb_midi2_class usbMIDI2;

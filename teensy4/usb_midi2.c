@@ -70,12 +70,11 @@ int usb_midi2_read_message(uint32_t *words, uint8_t *count)
 	}
 }
 
-void usb_midi2_write_message(const uint32_t *words, uint8_t count)
+int usb_midi2_write_message(const uint32_t *words, uint8_t count)
 {
-	uint8_t i;
-	for (i = 0; i < count; i++) {
-		usb_midi_write_packed(words[i]);
-	}
+	// Whole message or nothing: a UMP split mid-message by a TX timeout is
+	// a framing error on the wire, worse than a dropped message.
+	return usb_midi_write_packed_n(words, count);
 }
 
 #ifdef __cplusplus

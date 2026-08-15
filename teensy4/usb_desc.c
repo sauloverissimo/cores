@@ -2948,6 +2948,13 @@ PROGMEM const struct usb_string_descriptor_struct usb_string_manufacturer_name_d
         3,
         MANUFACTURER_NAME
 };
+PROGMEM const struct usb_string_descriptor_struct usb_string_midi2_gtb_name_default = {
+	2 + 4 * 2,
+	3,
+	{'M','a','i','n'}
+};
+extern struct usb_string_descriptor_struct usb_string_midi2_gtb_name
+        __attribute__ ((weak, alias("usb_string_midi2_gtb_name_default")));
 PROGMEM const struct usb_string_descriptor_struct usb_string_product_name_default = {
 	2 + PRODUCT_NAME_LEN * 2,
         3,
@@ -2994,60 +3001,61 @@ void usb_init_serialnumber(void)
 // first group, 1 group, no string, bMIDIProtocol 0x00 = unknown
 // (negotiated at runtime via MIDI-CI / UMP Stream), bandwidth unknown.
 #ifdef MIDI2_HAS_DESCRIPTORS
-#define MIDI2_GTB_ENTRY(id, grp) \
-	13, 0x26, 0x02, (id), 0x00, (grp), 1, 0, 0x00, 0, 0, 0, 0,
+#define MIDI2_GTB_ENTRY(id, grp, stridx) \
+	13, 0x26, 0x02, (id), 0x00, (grp), 1, (stridx), 0x00, 0, 0, 0, 0,
 
 PROGMEM const uint8_t midi2_gtb_descriptor[] = {
 	// GTB Header (section 5.4.1)
 	5, 0x26, 0x01,
 	LSB(5 + 13 * MIDI2_NUM_GROUPS),
 	MSB(5 + 13 * MIDI2_NUM_GROUPS),
-	// GTB Entries (section 5.4.2), one per group
-	MIDI2_GTB_ENTRY(1, 0)
+	// GTB Entries (section 5.4.2), one per group.  Block 1 carries the
+	// block name string (iBlockItem = 5, usb_string_midi2_gtb_name).
+	MIDI2_GTB_ENTRY(1, 0, 5)
   #if MIDI2_NUM_GROUPS >= 2
-	MIDI2_GTB_ENTRY(2, 1)
+	MIDI2_GTB_ENTRY(2, 1, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 3
-	MIDI2_GTB_ENTRY(3, 2)
+	MIDI2_GTB_ENTRY(3, 2, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 4
-	MIDI2_GTB_ENTRY(4, 3)
+	MIDI2_GTB_ENTRY(4, 3, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 5
-	MIDI2_GTB_ENTRY(5, 4)
+	MIDI2_GTB_ENTRY(5, 4, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 6
-	MIDI2_GTB_ENTRY(6, 5)
+	MIDI2_GTB_ENTRY(6, 5, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 7
-	MIDI2_GTB_ENTRY(7, 6)
+	MIDI2_GTB_ENTRY(7, 6, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 8
-	MIDI2_GTB_ENTRY(8, 7)
+	MIDI2_GTB_ENTRY(8, 7, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 9
-	MIDI2_GTB_ENTRY(9, 8)
+	MIDI2_GTB_ENTRY(9, 8, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 10
-	MIDI2_GTB_ENTRY(10, 9)
+	MIDI2_GTB_ENTRY(10, 9, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 11
-	MIDI2_GTB_ENTRY(11, 10)
+	MIDI2_GTB_ENTRY(11, 10, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 12
-	MIDI2_GTB_ENTRY(12, 11)
+	MIDI2_GTB_ENTRY(12, 11, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 13
-	MIDI2_GTB_ENTRY(13, 12)
+	MIDI2_GTB_ENTRY(13, 12, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 14
-	MIDI2_GTB_ENTRY(14, 13)
+	MIDI2_GTB_ENTRY(14, 13, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 15
-	MIDI2_GTB_ENTRY(15, 14)
+	MIDI2_GTB_ENTRY(15, 14, 0)
   #endif
   #if MIDI2_NUM_GROUPS >= 16
-	MIDI2_GTB_ENTRY(16, 15)
+	MIDI2_GTB_ENTRY(16, 15, 0)
   #endif
 };
 #endif // MIDI2_HAS_DESCRIPTORS
@@ -3098,6 +3106,9 @@ const usb_descriptor_list_t usb_descriptor_list[] = {
 #ifdef EXPERIMENTAL_INTERFACE
 	{0x03EE, 0x0000, microsoft_os_string_desc, 18},
 	{0x0000, 0xEE04, microsoft_os_compatible_id_desc, 40},
+#endif
+#ifdef MIDI2_HAS_DESCRIPTORS
+	{0x0305, 0x0409, (const uint8_t *)&usb_string_midi2_gtb_name, 0},
 #endif
         {0x0300, 0x0000, (const uint8_t *)&string0, 0},
         {0x0301, 0x0409, (const uint8_t *)&usb_string_manufacturer_name, 0},
